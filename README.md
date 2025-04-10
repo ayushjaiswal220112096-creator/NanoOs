@@ -47,7 +47,7 @@ This project is created as a learning initiative to explore the fundamentals of 
 - Cross-Compiler: GCC (i386 ELF)
 
 - Platform: WSL / Linux
-
-##👨‍💻 Contributors
+---
+## 👨‍💻 Contributors
 - Sonakshi / Garima – Kernel & Driver Development
 - Ayush / Arpit – Bootloader & System Initialization
