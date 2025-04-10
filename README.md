@@ -49,5 +49,7 @@ This project is created as a learning initiative to explore the fundamentals of 
 - Platform: WSL / Linux
 ---
 ## 👨‍💻 Contributors
-- Sonakshi / Garima – Kernel & Driver Development
-- Ayush / Arpit – Bootloader & System Initialization
+
+- **Sonakshi / Garima** – Kernel & Driver Development  
+- **Ayush / Arpit** – Bootloader & System Initialization
+
