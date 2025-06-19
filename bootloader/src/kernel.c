@@ -39,25 +39,25 @@ void kernel_main() {
 void execute_command(char* cmd) {
     if (strcmp(cmd, "help") == 0) {
         print("Available commands:\n");
-        print("  help    - Display this help message\n");
-        print("  clear   - Clear the screen\n");
-        print("  ls      - List files and directories\n");
-        print("  cat     - Display file contents (usage: cat filename)\n");
-        print("  write   - Create or overwrite a file (usage: write filename content)\n");
-        print("  mkdir   - Create a directory (usage: mkdir dirname)\n");
-        print("  rm      - Remove a file or empty directory (usage: rm name)\n");
-        print("  cd      - Change directory (usage: cd dirname)\n");
-        print("  pwd     - Print working directory\n");
-        print("  about   - About NanoOS\n");
+        print("  help        - Display this help message\n");
+        print("  cleanscreen - Clear the screen\n");
+        print("  list        - List files and directories\n");
+        print("  view        - Display file contents (usage: view filename)\n");
+        print("  write       - Create or overwrite a file (usage: write filename content)\n");
+        print("  newdir      - Create a directory (usage: newdir dirname)\n");
+        print("  del         - Remove a file or empty directory (usage: del name)\n");
+        print("  goto        - Change directory (usage: goto dirname)\n");
+        print("  curdir      - Print working directory\n");
+        print("  about       - About NanoOS\n");
     }
-    else if (strcmp(cmd, "clear") == 0) {
+    else if (strcmp(cmd, "cleanscreen") == 0) {
         clear_screen();
     }
-    else if (strcmp(cmd, "ls") == 0) {
+    else if (strcmp(cmd, "list") == 0) {
         command_ls();
     }
-    else if (strncmp(cmd, "cat ", 4) == 0) {
-        command_cat(cmd + 4); // Skip "cat " prefix
+    else if (strncmp(cmd, "view ", 5) == 0) {
+        command_cat(cmd + 5); // Skip "view " prefix
     }
     else if (strncmp(cmd, "write ", 6) == 0) {
         char* filename = cmd + 6;
@@ -73,21 +73,25 @@ void execute_command(char* cmd) {
         
         command_write(filename, content);
     }
-    else if (strncmp(cmd, "mkdir ", 6) == 0) {
-        command_mkdir(cmd + 6);
+    else if (strncmp(cmd, "newdir ", 7) == 0) {
+        command_mkdir(cmd + 7);
     }
-    else if (strncmp(cmd, "rm ", 3) == 0) {
-        command_rm(cmd + 3);
+    else if (strncmp(cmd, "del ", 4) == 0) {
+        command_rm(cmd + 4);
     }
-    else if (strncmp(cmd, "cd ", 3) == 0) {
-        command_cd(cmd + 3);
+    else if (strncmp(cmd, "goto ", 5) == 0) {
+        command_cd(cmd + 5);
     }
-    else if (strcmp(cmd, "pwd") == 0) {
+    else if (strcmp(cmd, "curdir") == 0) {
         command_pwd();
     }
     else if (strcmp(cmd, "about") == 0) {
-        print("NanoOS - A simple operating system for learning purposes\n");
-        print("Developed as a learning project for OS development\n");
+        print("NanoOs - A simple shell-based operating system built for learning purposes.\n\n");
+        print("Developed by Ayush Jaiswal, Arpit Upadhyay, Sonakshi Chand, and Garima Tiwari\n");
+        print("as part of a Project-Based Learning (PBL) initiative for B.Tech VI Semester\n");
+        print("at Graphic Era Hill University.\n\n");
+        print("Currently features basic shell commands and a simple file system.\n\n");
+        print("More features will be added in future updates!\n");
     }
     else if (strlen(cmd) == 0) {
         // Empty command, do nothing
