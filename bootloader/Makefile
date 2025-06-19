@@ -1,5 +1,5 @@
 ASM = nasm
-CC = i686-elf-gcc
+CC = /home/ayush/opt/cross/bin/i686-elf-gcc
 CFLAGS = -ffreestanding -nostdlib -O0 -I./inc
 LDS = ./src/linkerScript.ld
 

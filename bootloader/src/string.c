@@ -1,4 +1,5 @@
 #include "string.h"
+#include <stddef.h>
 
 int strcmp(const char* s1, const char* s2) {
     while (*s1 && (*s1 == *s2)) {
@@ -31,4 +32,42 @@ void* memset(void* dest, int val, unsigned int count) {
     unsigned char* ptr = dest;
     while (count--) *ptr++ = (unsigned char)val;
     return dest;
+}
+
+char* strchr(const char* str, char ch) {
+    while (*str && *str != ch) {
+        str++;
+    }
+    return (*str == ch) ? (char*)str : NULL;
+}
+
+char* strcat(char* dest, const char* src) {
+    char* original_dest = dest;
+    
+    // Find the end of the destination string
+    while (*dest) {
+        dest++;
+    }
+    
+    // Copy the source string
+    while (*src) {
+        *dest++ = *src++;
+    }
+    
+    // Add null terminator
+    *dest = '\0';
+    
+    return original_dest;
+}
+
+char* strcpy(char* dest, const char* src) {
+    char* original_dest = dest;
+    
+    while (*src) {
+        *dest++ = *src++;
+    }
+    
+    *dest = '\0';
+    
+    return original_dest;
 }
