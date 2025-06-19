@@ -1,89 +1,142 @@
+
+; Simple bootloader that enters protected mode and jumps to kernel
 [BITS 16]
 [ORG 0x7C00]
 
+; Constants
+CODE_SEG equ 0x08
+DATA_SEG equ 0x10
+KERNEL_OFFSET equ 0x1000
 
-CODE_OFFSET equ 0x8
-DATA_OFFSET equ 0x10
-
-KERNEL_LOOAD_SEG equ 0x1000
-KERNEL_START_ADDR equ 0x100000
 start:
-    cli         ; Clear interrupts
-    mov ax, 0x00  ; Set AX to 0
-    mov ds, ax    ; set data segment to 0x00
-    mov es, ax    ; Set extra segment -> 0x00
-    mov ss, ax    ; stack segment -> 0x00
-    mov sp, 0x7C00 ; set stack pointer to 0x7C00, top of bootloader segment
-    sti         ; Enable interrupts
-
-; Load Kernel
-mov bx, KERNEL_LOOAD_SEG
-mov dh, 0x00
-mov dl, 0x80
-mov cl, 0x02
-mov ch, 0x00
-mov ah, 0x02
-mov al, 8
-int 0x13
-
-jc disk_read_error
-
-
-load_PM:
-    cli
-    lgdt[gdt_descriptor]
-    mov eax, cr0
-    or al, 1
-    mov cr0, eax
-    jmp CODE_OFFSET:PModeMain
-
-disk_read_error:
-    hlt
-
-;gdt implementation
-gdt_start:
-    dd 0x0
-    dd 0x0
-
-    ;Code segment Descriptor
-    dw 0xFFFF ; Limit
-    dw 0x0000 ; Base
-    db 0x00   ; Base
-    db 10011010b ; Access Byte
-    db 11001111b ; Flags 
-    db 0x00      ; base
-
-    ; Data Segment Descriptor
-    dw 0xFFFF ; Limit
-    dw 0x0000 ; Base
-    db 0x00   ; Base
-    db 10010010b ; Access Byte
-    db 11001111b ; Flags 
-    db 0x00      ; Base 
-
-gdt_end:
-
-
-gdt_descriptor:
-    dw gdt_end - gdt_start ; Size of GDT - 1
-    dd gdt_start
-
-[BITS 32]
-PModeMain:
-    mov ax, DATA_OFFSET
+    ; Set up segments and stack
+    xor ax, ax
     mov ds, ax
     mov es, ax
-    mov fs, ax
     mov ss, ax
+    mov sp, 0x7C00
+    
+    ; Print 'B' to show bootloader is running
+    mov ah, 0x0E
+    mov al, 'B'
+    int 0x10
+    
+    ; Load kernel from disk
+    mov [BOOT_DRIVE], dl    ; Save boot drive
+    call load_kernel
+    
+    ; Print 'K' to show kernel loaded
+    mov ah, 0x0E
+    mov al, 'K'
+    int 0x10
+    
+    ; Enter protected mode
+    call switch_to_pm
+    
+    ; We never return from switch_to_pm
+    jmp $
+
+; Load kernel from disk
+load_kernel:
+    pusha
+    ; Set up disk read
+    mov ah, 0x02        ; BIOS read function
+    mov al, 20          ; Number of sectors to read
+    mov ch, 0           ; Cylinder 0
+    mov dh, 0           ; Head 0
+    mov cl, 2           ; Start from sector 2
+    mov dl, [BOOT_DRIVE]; Drive number
+    
+    ; Set up memory location to read to
+    mov bx, KERNEL_OFFSET
+    
+    ; Perform the read
+    int 0x13
+    jc disk_error       ; Jump if error (carry flag set)
+    
+    ; Check if we read the right number of sectors
+    cmp al, 20
+    jne disk_error
+    
+    popa
+    ret
+
+disk_error:
+    ; Print 'D' for disk error
+    mov ah, 0x0E
+    mov al, 'D'
+    int 0x10
+    jmp $               ; Hang
+
+; GDT
+gdt_start:
+    ; Null descriptor
+    dd 0x0
+    dd 0x0
+    
+    ; Code segment descriptor
+    dw 0xFFFF           ; Limit (bits 0-15)
+    dw 0x0              ; Base (bits 0-15)
+    db 0x0              ; Base (bits 16-23)
+    db 10011010b        ; Access byte
+    db 11001111b        ; Flags + Limit (bits 16-19)
+    db 0x0              ; Base (bits 24-31)
+    
+    ; Data segment descriptor
+    dw 0xFFFF           ; Limit (bits 0-15)
+    dw 0x0              ; Base (bits 0-15)
+    db 0x0              ; Base (bits 16-23)
+    db 10010010b        ; Access byte
+    db 11001111b        ; Flags + Limit (bits 16-19)
+    db 0x0              ; Base (bits 24-31)
+gdt_end:
+
+gdt_descriptor:
+    dw gdt_end - gdt_start - 1  ; Size of GDT
+    dd gdt_start                ; Address of GDT
+
+; Switch to protected mode
+switch_to_pm:
+    cli                     ; Disable interrupts
+    lgdt [gdt_descriptor]   ; Load GDT
+    
+    ; Enable protected mode
+    mov eax, cr0
+    or eax, 0x1
+    mov cr0, eax
+    
+    ; Far jump to flush pipeline
+    jmp CODE_SEG:init_pm
+    
+; Variables
+BOOT_DRIVE db 0
+
+; Protected mode initialization
+[BITS 32]
+init_pm:
+    ; Set up segment registers
+    mov ax, DATA_SEG
+    mov ds, ax
+    mov ss, ax
+    mov es, ax
+    mov fs, ax
     mov gs, ax
-    mov ebp, 0x9C00
+    mov ebp, 0x90000
     mov esp, ebp
+    
+    ; Print 'P' to show we're in protected mode (position 160 = row 2, col 0)
+    mov ebx, 0xB8000 + 160
+    mov al, 'P'
+    mov ah, 0x0F
+    mov [ebx], ax
+    
+    ; Jump to kernel
+    call KERNEL_OFFSET
+    
+    ; We should never get here
+    jmp $
 
-    in al, 0x92
-    or al, 2
-    out 0x92, al
 
-    jmp CODE_OFFSET:KERNEL_START_ADDR
-
-times 510 - ($ - $$) db 0
-dw 0xAA55  ; Boot sector signature
+; Padding and boot signature
+times 510-($-$$) db 0
+dw 0xAA55

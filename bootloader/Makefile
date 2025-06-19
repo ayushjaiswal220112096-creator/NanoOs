@@ -1,19 +1,27 @@
-FILES = ./build/kernel.asm.o ./build/kernel.o
-FLAGS = -g -ffreestanding -nostdlib -nostartfiles -nodefaultlibs -Wall -O0 -Iinc
-all:
-	nasm -f bin ./src/boot.asm -o ./bin/boot.bin
-	nasm -f elf -g ./src/kernel.asm -o ./build/kernel.asm.o
-	i686-elf-gcc -I./src $(FLAGS) -std=gnu99 -c ./src/kernel.c -o ./build/kernel.o
-	i686-elf-ld -g -relocatable $(FILES) -o ./build/completeKernel.o
-	i686-elf-gcc $(FLAGS) -T ./src/linkerScript.ld -o ./bin/kernel.bin -ffreestanding -O0 -nostdlib ./build/completeKernel.o
+ASM = nasm
+CC = i686-elf-gcc
+CFLAGS = -ffreestanding -nostdlib -O0 -I./inc
+LDS = ./src/linkerScript.ld
 
-	dd if=./bin/boot.bin >> ./bin/os.bin
-	dd if=./bin/kernel.bin >> ./bin/os.bin
-	dd if=/dev/zero bs=512 count=8 >> ./bin/os.bin 
+.PHONY: all clean run
+
+all:
+	mkdir -p bin build
+	$(ASM) -f bin src/boot.asm -o bin/boot.bin
+	$(ASM) -f elf32 src/kernel.asm -o build/kernel.o
+	$(CC) $(CFLAGS) -c src/kernel.c -o build/kernel_c.o
+	$(CC) $(CFLAGS) -c src/screen.c -o build/screen.o
+	$(CC) $(CFLAGS) -c src/keyboard.c -o build/keyboard.o
+	$(CC) $(CFLAGS) -c src/string.c -o build/string.o
+	$(CC) $(CFLAGS) -c src/fs.c -o build/fs.o
+	$(CC) -T $(LDS) build/kernel.o build/kernel_c.o build/screen.o build/keyboard.o build/string.o build/fs.o -o build/kernel_full.o $(CFLAGS) -lgcc
+	objcopy -O binary build/kernel_full.o bin/kernel.bin
+	cat bin/boot.bin bin/kernel.bin > bin/os.bin
+	truncate -s 1474560 bin/os.bin
+	ls -la bin/os.bin
+
+run:
+	qemu-system-i386 -drive format=raw,file=bin/os.bin -serial file:serial.log -monitor stdio
+
 clean:
-	rm -f ./bin/boot.bin
-	rm -f ./bin/kernel.bin
-	rm -f ./bin/os.bin
-	rm -f ./build/kernel.asm.o
-	rm -f ./build/kernel.o
-	rm -f ./build/completeKernel.o
+	rm -f bin/*.bin build/*.o
